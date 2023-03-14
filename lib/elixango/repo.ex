@@ -7,6 +7,21 @@ defmodule Elixango.Repo do
       @otp_app unquote(Keyword.get(opts, :otp_app))
       @collections unquote(Keyword.get(opts, :collections))
 
+      @default_dynamic_repo unquote(Keyword.get(opts, :default_dynamic_repo)) || __MODULE__
+
+      def __adapter__() do
+        Ecto.Adapters.Elixango
+      end
+
+      def start_link(opts \\ []) do
+        opts
+        |> config()
+        |> Arangox.start_link()
+      end
+
+      def stop(timeout \\ 5000) do
+        Supervisor.stop(__MODULE__, :normal, timeout)
+      end
 
       def child_spec(opts \\ []) do
         opts
@@ -32,7 +47,13 @@ defmodule Elixango.Repo do
         end
       end
 
-      def get_dynamic_repo do __MODULE__ end
+      def get_dynamic_repo() do
+        Process.get({__MODULE__, :dynamic_repo}, @default_dynamic_repo)
+      end
+
+      def put_dynamic_repo(dynamic) when is_atom(dynamic) or is_pid(dynamic) do
+        Process.put({__MODULE__, :dynamic_repo}, dynamic) || @default_dynamic_repo
+      end
       # new
 
       def insert(struct, opts \\ []) do
@@ -623,29 +644,6 @@ defmodule Elixango.Repo do
       # defp do_delete(%Changeset{valid?: false} = changeset, opts) do
       #   {:error, put_repo_and_action(changeset, :delete, @otp_app, opts)}
       # end
-      # def to_struct_all(struct_, items) do
-      #   to_struct(struct_, items)
-      # end
-      # def to_struct(struct_, items) when is_list(items) do
-      #   Enum.map(items, fn(item) -> to_struct(struct_, item) end)
-      # end
-      # def to_struct(struct_, item) when is_map(item) do
-      #   struct(struct_, string_map_to_atom(item))
-      # end
-      # def to_struct(struct_, item) when is_nil(item) do
-      #   nil
-      # end
-      # def string_map_to_atom(item) when is_map(item) do
-      #   id = item["_key"]
-      #   item = if id == nil do item else Map.put(item, "id", id) end
-      #   for {key, val} <- item, into: %{}, do: {String.to_atom(key), string_map_to_atom(val)}
-      # end
-      # def string_map_to_atom(items) when is_list(items) do
-      #   Enum.map(items, fn(item) -> string_map_to_atom(item) end)
-      # end
-      # def string_map_to_atom(val) do
-      #   val
-      # end
       @doc """
         Similar to one/1 but raises Ecto.NoResultsError if no record was found.
         Raises if more than one entry.
@@ -767,27 +765,13 @@ defmodule Elixango.Repo do
       end
 
       def to_struct_all(struct_, items) do
-        to_struct(struct_, items)
+        Elixango.Ecto.Repo.Schema.to_struct_all(struct_, items)
       end
-      def to_struct(struct_, items) when is_list(items) do
-        Enum.map(items, fn(item) -> to_struct(struct_, item) end)
-      end
-      def to_struct(struct_, item) when is_map(item) do
-        struct(struct_, string_map_to_atom(item))
-      end
-      def to_struct(struct_, item) when is_nil(item) do
-        nil
-      end
-      def string_map_to_atom(item) when is_map(item) do
-        id = item["_key"]
-        item = if id == nil do item else Map.put(item, "id", id) end
-        for {key, val} <- item, into: %{}, do: {String.to_atom(key), string_map_to_atom(val)}
-      end
-      def string_map_to_atom(items) when is_list(items) do
-        Enum.map(items, fn(item) -> string_map_to_atom(item) end)
+      def to_struct(struct_, items) do
+        Elixango.Ecto.Repo.Schema.to_struct(struct_, items)
       end
       def string_map_to_atom(val) do
-        val
+        Elixango.Ecto.Repo.Schema.string_map_to_atom(val)
       end
 
       def collection(%Ecto.Changeset{} = struct), do: struct.data.__meta__.source

@@ -48,7 +48,6 @@ defmodule Elixango.MixProject do
       {:ecto, "~> 3.7.1"},
       {:ecto_sql, "~> 3.4"},
       {:timex, "~> 3.7.6"},
-      {:httpoison, "~> 2.0"},
       {:mint, "~> 1.0"}
     ]
   end

@@ -988,6 +988,12 @@ defmodule Elixango.Ecto.Type do
   defp same_decimal(term) when is_integer(term), do: {:ok, Decimal.new(term)}
   defp same_decimal(term) when is_float(term), do: {:ok, Decimal.from_float(term)}
   defp same_decimal(%Decimal{} = term), do: check_decimal(term, true)
+  defp same_decimal(term) when is_binary(term) do
+    case Decimal.parse(term) do
+      {%Decimal{} = value, ""} -> value
+      _ -> :error
+    end
+  end
   defp same_decimal(_), do: :error
 
   defp same_date(%Date{} = term), do: {:ok, term}

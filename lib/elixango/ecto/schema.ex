@@ -329,7 +329,7 @@ defmodule Elixango.Ecto.Repo.Schema do
 
     changeset = put_repo_and_action(changeset, :insert, repo, opts)
     changeset = Relation.surface_changes(changeset, struct_, fields ++ assocs)
-    document = changeset.changes
+    document = to_struct(struct_, changeset.changes)
 
     {:ok, document ,collection_}
   end
@@ -388,7 +388,7 @@ defmodule Elixango.Ecto.Repo.Schema do
     on_conflict =
       on_conflict(on_conflict, conflict_target, schema_meta, fn -> length(changes) end, adapter)
 
-    document = Map.new changes
+    document = to_struct(struct_, Map.new changes)
 
     collection_ = collection(changeset)
 
@@ -447,7 +447,7 @@ defmodule Elixango.Ecto.Repo.Schema do
     on_conflict =
       on_conflict(on_conflict, conflict_target, schema_meta, fn -> length(changes) end, adapter)
 
-    document = Map.new changes
+    document = to_struct(struct_, Map.new changes)
 
     collection_ = collection(changeset)
 
@@ -755,16 +755,25 @@ defmodule Elixango.Ecto.Repo.Schema do
   def to_struct(struct_, item) when is_nil(item) do
     nil
   end
+  def string_map_to_atom(val = %Decimal{}) do
+    val
+  end
   def string_map_to_atom(item) when is_map(item) do
-    id = item["_key"]
-    item = if id == nil do item else Map.put(item, "id", id) end
-    for {key, val} <- item, into: %{}, do: {String.to_atom(key), string_map_to_atom(val)}
+    # id = item["_key"]
+    # item = if id == nil do item else Map.put(item, "id", id) end
+    for {key, val} <- item, into: %{}, do: {to_atom(key), string_map_to_atom(val)}
   end
   def string_map_to_atom(items) when is_list(items) do
     Enum.map(items, fn(item) -> string_map_to_atom(item) end)
   end
   def string_map_to_atom(val) do
     val
+  end
+  defp to_atom(key) when is_binary(key) do
+    String.to_atom(key)
+  end
+  defp to_atom(key) when is_atom(key) do
+    key
   end
 
 
