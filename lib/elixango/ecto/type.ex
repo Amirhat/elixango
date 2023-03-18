@@ -990,7 +990,7 @@ defmodule Elixango.Ecto.Type do
   defp same_decimal(%Decimal{} = term), do: check_decimal(term, true)
   defp same_decimal(term) when is_binary(term) do
     case Decimal.parse(term) do
-      {%Decimal{} = value, ""} -> value
+      {%Decimal{} = value, ""} -> {:ok, value}
       _ -> :error
     end
   end
